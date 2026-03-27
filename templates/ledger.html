@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Ledger: {{ party.name }}</h1>
+        <p class="text-muted mb-0">Person-wise account summary</p>
+    </div>
+    <a href="{{ url_for('add_transaction') }}" class="btn btn-success">Add Transaction</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-success summary-card">
+            <div class="card-body">
+                <p class="text-muted mb-1">Total Receivable</p>
+                <h4 class="text-success mb-0">Rs {{ '%.2f'|format(total_receivable) }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-danger summary-card">
+            <div class="card-body">
+                <p class="text-muted mb-1">Total Payable</p>
+                <h4 class="text-danger mb-0">Rs {{ '%.2f'|format(total_payable) }}</h4>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card summary-card {% if net_balance > 0 %}border-success{% elif net_balance < 0 %}border-danger{% else %}border-secondary{% endif %}">
+            <div class="card-body">
+                <p class="text-muted mb-1">Net Balance</p>
+                <h4 class="mb-0 {% if net_balance > 0 %}text-success{% elif net_balance < 0 %}text-danger{% endif %}">
+                    Rs {{ '%.2f'|format(net_balance) }}
+                </h4>
+                <small class="text-muted">
+                    {% if net_balance > 0 %}
+                        {{ party.name }} owes you
+                    {% elif net_balance < 0 %}
+                        You owe {{ party.name }}
+                    {% else %}
+                        Settled
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th class="text-end">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                <tr>
+                    <td>{{ entry.date.strftime('%d %b %Y') }}</td>
+                    <td>{{ transaction_types[entry.transaction_type] }}</td>
+                    <td>{{ entry.description or '-' }}</td>
+                    <td class="text-end {% if entry.transaction_type in ['cash_in', 'udhari_given', 'repayment_received'] %}text-success{% else %}text-danger{% endif %}">
+                        Rs {{ '%.2f'|format(entry.amount) }}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-4">No ledger entries for this party.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
