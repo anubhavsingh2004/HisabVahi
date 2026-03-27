@@ -1,6 +1,6 @@
-# HisabKitab
+# HisabVahi
 
-HisabKitab is a minimal full-stack Flask web application to track:
+HisabVahi is a minimal full-stack Flask web application to track:
 - Cash inflow
 - Cash outflow
 - Udhari (credit/debit ledger)
@@ -104,7 +104,7 @@ Meaning:
 
 ## Project Structure
 
-hisabkitab/
+<project-folder>/
 - app.py
 - models.py
 - config.py
@@ -131,7 +131,7 @@ hisabkitab/
 
 1. Open terminal in project folder:
 
-   cd D:\projects\test\ledger\hisabkitab
+   cd D:\path\to\<project-folder>
 
 2. Create a virtual environment:
 
