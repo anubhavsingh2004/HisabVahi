@@ -10,11 +10,19 @@ from flask import (
     request,
     session,
     url_for,
+    send_file,
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from config import Config
 from models import Party, Transaction, User, db
+from exports import (
+    export_ledger_to_excel,
+    export_ledger_to_pdf,
+    export_transactions_to_excel,
+    export_transactions_to_pdf,
+    export_dashboard_summary_to_excel,
+)
 
 
 TRANSACTION_TYPES = {
@@ -200,6 +208,44 @@ def dashboard():
     )
 
 
+@app.route("/dashboard/export")
+@login_required
+def export_dashboard():
+    """Export dashboard summary to Excel."""
+    transactions = Transaction.query.filter_by(user_id=g.user.id).all()
+
+    total_cash_in = get_sum(transactions, "cash_in")
+    total_cash_out = get_sum(transactions, "cash_out")
+    total_receivable, total_payable = calculate_receivable_payable(transactions)
+
+    recent_transactions = (
+        Transaction.query.filter_by(user_id=g.user.id)
+        .order_by(Transaction.date.desc(), Transaction.created_at.desc())
+        .limit(10)
+        .all()
+    )
+
+    wb = export_dashboard_summary_to_excel(
+        total_cash_in,
+        total_cash_out,
+        total_receivable,
+        total_payable,
+        recent_transactions,
+        TRANSACTION_TYPES,
+    )
+    from io import BytesIO
+    stream = BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+    filename = f"Dashboard_Summary_{datetime.now().strftime('%d-%m-%Y')}.xlsx"
+    return send_file(
+        stream,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name=filename,
+    )
+
+
 @app.route("/parties")
 @login_required
 def parties():
@@ -339,6 +385,43 @@ def transactions():
         transactions=transactions_list,
         transaction_types=TRANSACTION_TYPES,
     )
+
+
+@app.route("/transactions/export/<format>")
+@login_required
+def export_transactions(format):
+    """Export all transactions in PDF or Excel format."""
+    transactions_list = (
+        Transaction.query.filter_by(user_id=g.user.id)
+        .order_by(Transaction.date.desc(), Transaction.created_at.desc())
+        .all()
+    )
+
+    if format == "excel":
+        wb = export_transactions_to_excel(transactions_list, TRANSACTION_TYPES)
+        from io import BytesIO
+        stream = BytesIO()
+        wb.save(stream)
+        stream.seek(0)
+        filename = f"Transactions_{datetime.now().strftime('%d-%m-%Y')}.xlsx"
+        return send_file(
+            stream,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            as_attachment=True,
+            download_name=filename,
+        )
+    elif format == "pdf":
+        pdf_buffer = export_transactions_to_pdf(transactions_list, TRANSACTION_TYPES)
+        filename = f"Transactions_{datetime.now().strftime('%d-%m-%Y')}.pdf"
+        return send_file(
+            pdf_buffer,
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=filename,
+        )
+    else:
+        flash("Invalid export format.", "danger")
+        return redirect(url_for("transactions"))
 
 
 @app.route("/transactions/add", methods=["GET", "POST"])
@@ -572,6 +655,47 @@ def ledger(party_id):
         net_balance=net_balance,
         transaction_types=TRANSACTION_TYPES,
     )
+
+
+@app.route("/ledger/<int:party_id>/export/<format>")
+@login_required
+def export_ledger(party_id, format):
+    """Export ledger in PDF or Excel format."""
+    party = Party.query.filter_by(id=party_id, user_id=g.user.id).first_or_404()
+    entries = (
+        Transaction.query.filter_by(user_id=g.user.id, party_id=party.id)
+        .order_by(Transaction.date.asc(), Transaction.created_at.asc())
+        .all()
+    )
+
+    total_receivable, total_payable = calculate_receivable_payable(entries)
+    net_balance = total_receivable - total_payable
+
+    if format == "excel":
+        wb = export_ledger_to_excel(party, entries, total_receivable, total_payable, net_balance)
+        from io import BytesIO
+        stream = BytesIO()
+        wb.save(stream)
+        stream.seek(0)
+        filename = f"Ledger_{party.name}_{datetime.now().strftime('%d-%m-%Y')}.xlsx"
+        return send_file(
+            stream,
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            as_attachment=True,
+            download_name=filename,
+        )
+    elif format == "pdf":
+        pdf_buffer = export_ledger_to_pdf(party, entries, total_receivable, total_payable, net_balance)
+        filename = f"Ledger_{party.name}_{datetime.now().strftime('%d-%m-%Y')}.pdf"
+        return send_file(
+            pdf_buffer,
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=filename,
+        )
+    else:
+        flash("Invalid export format.", "danger")
+        return redirect(url_for("ledger", party_id=party_id))
 
 
 if __name__ == "__main__":
