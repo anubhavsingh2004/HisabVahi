@@ -121,6 +121,14 @@ def register():
             flash("All fields are required.", "danger")
             return render_template("register.html")
 
+        if len(username) > 50:
+            flash("Username must be 50 characters or fewer.", "danger")
+            return render_template("register.html")
+
+        if len(email) > 120:
+            flash("Email must be 120 characters or fewer.", "danger")
+            return render_template("register.html")
+
         if len(password) < 6:
             flash("Password must be at least 6 characters.", "danger")
             return render_template("register.html")
@@ -281,6 +289,24 @@ def add_party():
                 edit_mode=False,
             )
 
+        if len(name) > 120:
+            flash("Party name must be 120 characters or fewer.", "danger")
+            return render_template(
+                "add_party.html",
+                party_types=PARTY_TYPES,
+                form_data=request.form,
+                edit_mode=False,
+            )
+
+        if phone and len(phone) > 20:
+            flash("Phone number must be 20 characters or fewer.", "danger")
+            return render_template(
+                "add_party.html",
+                party_types=PARTY_TYPES,
+                form_data=request.form,
+                edit_mode=False,
+            )
+
         if party_type not in PARTY_TYPES:
             flash("Invalid party type.", "danger")
             return render_template(
@@ -324,6 +350,26 @@ def edit_party(party_id):
 
         if not name:
             flash("Party name is required.", "danger")
+            return render_template(
+                "add_party.html",
+                party_types=PARTY_TYPES,
+                party=party,
+                form_data=request.form,
+                edit_mode=True,
+            )
+
+        if len(name) > 120:
+            flash("Party name must be 120 characters or fewer.", "danger")
+            return render_template(
+                "add_party.html",
+                party_types=PARTY_TYPES,
+                party=party,
+                form_data=request.form,
+                edit_mode=True,
+            )
+
+        if phone and len(phone) > 20:
+            flash("Phone number must be 20 characters or fewer.", "danger")
             return render_template(
                 "add_party.html",
                 party_types=PARTY_TYPES,
@@ -436,6 +482,16 @@ def add_transaction():
         description = request.form.get("description", "").strip()
         date_raw = request.form.get("date", "").strip()
 
+        if len(description) > 255:
+            flash("Description must be 255 characters or fewer.", "danger")
+            return render_template(
+                "add_transaction.html",
+                parties=parties_list,
+                transaction_types=TRANSACTION_TYPES,
+                form_data=request.form,
+                edit_mode=False,
+            )
+
         if transaction_type not in TRANSACTION_TYPES:
             flash("Invalid transaction type.", "danger")
             return render_template(
@@ -530,6 +586,17 @@ def edit_transaction(transaction_id):
         amount_raw = request.form.get("amount", "").strip()
         description = request.form.get("description", "").strip()
         date_raw = request.form.get("date", "").strip()
+
+        if len(description) > 255:
+            flash("Description must be 255 characters or fewer.", "danger")
+            return render_template(
+                "add_transaction.html",
+                parties=parties_list,
+                transaction_types=TRANSACTION_TYPES,
+                transaction=transaction,
+                form_data=request.form,
+                edit_mode=True,
+            )
 
         if transaction_type not in TRANSACTION_TYPES:
             flash("Invalid transaction type.", "danger")
