@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from functools import wraps
 
@@ -58,6 +59,12 @@ def login_required(view_func):
         return view_func(*args, **kwargs)
 
     return wrapped
+
+
+def is_valid_email(email):
+    """Validate email format using regex."""
+    pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+    return re.match(pattern, email) is not None
 
 
 @app.before_request
@@ -129,8 +136,12 @@ def register():
             flash("Email must be 120 characters or fewer.", "danger")
             return render_template("register.html")
 
-        if len(password) < 6:
-            flash("Password must be at least 6 characters.", "danger")
+        if not is_valid_email(email):
+            flash("Invalid email format.", "danger")
+            return render_template("register.html")
+
+        if len(password) < 8:
+            flash("Password must be at least 8 characters.", "danger")
             return render_template("register.html")
 
         if User.query.filter_by(username=username).first():
@@ -166,6 +177,10 @@ def login():
 
         if not email or not password:
             flash("Email and password are required.", "danger")
+            return render_template("login.html")
+
+        if not is_valid_email(email):
+            flash("Invalid email format.", "danger")
             return render_template("login.html")
 
         user = User.query.filter_by(email=email).first()
