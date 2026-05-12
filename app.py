@@ -207,17 +207,27 @@ def logout():
 @app.route("/dashboard")
 @login_required
 def dashboard():
+
+    # All transactions used for dashboard summary numbers
     transactions = Transaction.query.filter_by(user_id=g.user.id).all()
 
     total_cash_in = get_sum(transactions, "cash_in")
     total_cash_out = get_sum(transactions, "cash_out")
     total_receivable, total_payable = calculate_receivable_payable(transactions)
 
+    # Load parties for optional filtering of recent transactions
+    parties_list = Party.query.filter_by(user_id=g.user.id).order_by(Party.name.asc()).all()
+
+    # Recent transactions (may be filtered by party via query string)
+    recent_query = Transaction.query.filter_by(user_id=g.user.id)
+    dashboard_party_id = request.args.get("party_id", "").strip()
+    selected_dashboard_party_id = None
+    if dashboard_party_id and dashboard_party_id.isdigit():
+        selected_dashboard_party_id = int(dashboard_party_id)
+        recent_query = recent_query.filter(Transaction.party_id == selected_dashboard_party_id)
+
     recent_transactions = (
-        Transaction.query.filter_by(user_id=g.user.id)
-        .order_by(Transaction.date.desc(), Transaction.created_at.desc())
-        .limit(10)
-        .all()
+        recent_query.order_by(Transaction.date.desc(), Transaction.created_at.desc()).limit(10).all()
     )
 
     return render_template(
@@ -228,6 +238,8 @@ def dashboard():
         total_payable=total_payable,
         recent_transactions=recent_transactions,
         transaction_types=TRANSACTION_TYPES,
+        parties=parties_list,
+        selected_party_id=selected_dashboard_party_id,
     )
 
 
@@ -436,15 +448,30 @@ def delete_party(party_id):
 @app.route("/transactions")
 @login_required
 def transactions():
+    # Load parties for the dropdown filter
+    parties_list = Party.query.filter_by(user_id=g.user.id).order_by(Party.name.asc()).all()
+
+    # Base query for user's transactions
+    query = Transaction.query.filter_by(user_id=g.user.id)
+
+    # Apply party filter if provided via query string (GET)
+    party_id = request.args.get("party_id", "").strip()
+    selected_party_id = None
+    if party_id:
+        if party_id.isdigit():
+            selected_party_id = int(party_id)
+            query = query.filter(Transaction.party_id == selected_party_id)
+
     transactions_list = (
-        Transaction.query.filter_by(user_id=g.user.id)
-        .order_by(Transaction.date.desc(), Transaction.created_at.desc())
-        .all()
+        query.order_by(Transaction.date.desc(), Transaction.created_at.desc()).all()
     )
+
     return render_template(
         "transactions.html",
         transactions=transactions_list,
         transaction_types=TRANSACTION_TYPES,
+        parties=parties_list,
+        selected_party_id=selected_party_id,
     )
 
 
