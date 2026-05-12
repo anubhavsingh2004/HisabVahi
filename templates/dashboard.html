@@ -55,6 +55,12 @@
                     <option value="{{ p.id }}" {% if selected_party_id == p.id %}selected{% endif %}>{{ p.name }}</option>
                     {% endfor %}
                 </select>
+                <select name="transaction_type" class="form-select form-select-sm me-2">
+                    <option value="">All Types</option>
+                    {% for key, label in transaction_types.items() %}
+                    <option value="{{ key }}" {% if selected_transaction_type == key %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
                 <button class="btn btn-sm btn-primary me-2" type="submit">Filter</button>
             </form>
             <a href="{{ url_for('transactions') }}" class="btn btn-sm btn-outline-secondary">View All</a>

@@ -226,6 +226,14 @@ def dashboard():
         selected_dashboard_party_id = int(dashboard_party_id)
         recent_query = recent_query.filter(Transaction.party_id == selected_dashboard_party_id)
 
+    dashboard_transaction_type = request.args.get("transaction_type", "").strip()
+    selected_dashboard_transaction_type = None
+    if dashboard_transaction_type and dashboard_transaction_type in TRANSACTION_TYPES:
+        selected_dashboard_transaction_type = dashboard_transaction_type
+        recent_query = recent_query.filter(
+            Transaction.transaction_type == selected_dashboard_transaction_type
+        )
+
     recent_transactions = (
         recent_query.order_by(Transaction.date.desc(), Transaction.created_at.desc()).limit(10).all()
     )
@@ -240,6 +248,7 @@ def dashboard():
         transaction_types=TRANSACTION_TYPES,
         parties=parties_list,
         selected_party_id=selected_dashboard_party_id,
+        selected_transaction_type=selected_dashboard_transaction_type,
     )
 
 
@@ -462,6 +471,12 @@ def transactions():
             selected_party_id = int(party_id)
             query = query.filter(Transaction.party_id == selected_party_id)
 
+    transaction_type = request.args.get("transaction_type", "").strip()
+    selected_transaction_type = None
+    if transaction_type and transaction_type in TRANSACTION_TYPES:
+        selected_transaction_type = transaction_type
+        query = query.filter(Transaction.transaction_type == selected_transaction_type)
+
     transactions_list = (
         query.order_by(Transaction.date.desc(), Transaction.created_at.desc()).all()
     )
@@ -472,6 +487,7 @@ def transactions():
         transaction_types=TRANSACTION_TYPES,
         parties=parties_list,
         selected_party_id=selected_party_id,
+        selected_transaction_type=selected_transaction_type,
     )
 
 

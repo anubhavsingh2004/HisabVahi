@@ -30,6 +30,15 @@
             </select>
         </div>
         <div class="col-auto">
+            <label class="visually-hidden" for="typeSelect">Transaction Type</label>
+            <select id="typeSelect" name="transaction_type" class="form-select">
+                <option value="">All Types</option>
+                {% for key, label in transaction_types.items() %}
+                <option value="{{ key }}" {% if selected_transaction_type == key %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-auto">
             <button type="submit" class="btn btn-primary">Filter</button>
             <a href="{{ url_for('transactions') }}" class="btn btn-outline-secondary">Clear</a>
         </div>
